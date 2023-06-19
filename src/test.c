@@ -1,4 +1,6 @@
 #include "test.h"
+#include "packet_reader.h"
+#include "varint/varint.h"
 
 #define SERVER_IP "127.0.0.1"
 
@@ -79,24 +81,30 @@ int main(int argc, char *argv[]) {
 
         if (!fork()) { // this is the child process
             close(socket_fd); // child doesn't need the listener
+            memset(buffer, 0, MAXLINE); // clear the buffer
             int numbytes = recv(client_fd, buffer, MAXLINE - 1, 0);
             CHECK_ERROR(numbytes);
-            printf("Packet Length: %d\n", numbytes);
-            printf("Packet: ");
-            for (int i = 0; i < numbytes; i++) {
-                printf("%02x ", buffer[i]);
+            printf("Recieved Length: %d\n", numbytes);
+            packet* p = read_packet(buffer);
+            print_packet(p);
+            if (p->packet_id == 0x0) {
+                // Handshake Packet!
+                printf("Handshake Packet!\n");
+                handshake_packet* hp = read_hp(p);
+                print_handshake_packet(hp);
+                free_handshake_packet(hp);
             }
-            printf("\n");
+            free_packet(p);
             char *response = "Hello, world!";
             int send_status = send(client_fd, response, strlen(response), 0);
             CHECK_ERROR(send_status);
             close(client_fd);
             exit(0);
         }
+        freeaddrinfo(info);
         close(client_fd); // parent doesn't need this
     }
 
     close(socket_fd);
-    freeaddrinfo(info);
     return 0;
 }
