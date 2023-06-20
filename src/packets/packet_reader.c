@@ -1,19 +1,4 @@
-#include "varint/varint.h"
-#include "test.h"
-#include <assert.h>
-
-typedef struct {
-    int packet_size;
-    int packet_id;
-    char *packet_data;
-} packet;
-
-typedef struct {
-    int protocol_version;
-    char* server_address;
-    unsigned short server_port;
-    int next_state;
-} handshake_packet;
+#include "packet_reader.h"
 
 handshake_packet* read_hp(packet* p) {
     handshake_packet* hp = (handshake_packet*) malloc(sizeof(handshake_packet));
