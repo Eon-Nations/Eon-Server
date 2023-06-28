@@ -1,5 +1,6 @@
 # Cmake generated files
 build/
+cJSON/
 
 # Prerequisites
 *.d
