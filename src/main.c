@@ -132,9 +132,18 @@ int main(int argc, char** argv) {
                 printf(" %x", buffer[i]);
             }
             printf("\n");
-            //packet_list_t* packets = read_packets(buffer, bytes_sent);
-            uint32_t bytes_read = 0;
-            packet_t* packet = read_packet(buffer, bytes_sent, &bytes_read);
+
+            uint32_t packet_bytes_read = 0;
+            packet_t* packet = read_packet(buffer, bytes_sent, &packet_bytes_read);
+            print_packet(packet);
+            free_packet(packet);
+            printf("Rest of Raw Data: ");
+            packet_bytes_read -= 1;
+            for (int i = packet_bytes_read; i < bytes_sent; i++) {
+                printf(" 0x%x", buffer[i]);
+            }
+            printf("\n");
+            packet = read_packet(buffer + packet_bytes_read, bytes_sent - packet_bytes_read, &packet_bytes_read);
             print_packet(packet);
             free_packet(packet);
             return 0; // STATUS RETURNED TO PARENT PROCESS

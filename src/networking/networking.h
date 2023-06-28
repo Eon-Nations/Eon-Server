@@ -21,11 +21,13 @@ int32_t read_varint(uint8_t *data, uint32_t size, uint32_t *bytes_read);
 
 packet_t* read_packet(uint8_t* buffer, uint32_t buffer_size, uint32_t* bytes_read);
 
-packet_list_t* read_packets(uint8_t* buffer, uint32_t buffer_size);
+void read_packets(packet_list_t* packets, uint8_t* buffer, uint32_t buffer_size);
 
 void print_packet(packet_t* packet);
 void print_packets(packet_list_t* packets);
 void free_packet(packet_t* packet);
+
+void free_stack_packet_list(packet_list_t* packets);
 void free_packet_list(packet_list_t* packets);
 
 #endif

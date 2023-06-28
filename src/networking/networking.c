@@ -14,8 +14,6 @@ int32_t read_varint(uint8_t *data, uint32_t data_size, uint32_t *bytes_read) {
         position++;
     } while ((current_byte & SEGMENT_CONTINUATION) != 0 && position < data_size);
     *bytes_read += position;
-    printf("Bytes read: %d\n", position);
-    fflush(stdout);
     return value;
 }
 
@@ -23,27 +21,41 @@ packet_t* read_packet(uint8_t* buffer, uint32_t buffer_size, uint32_t* bytes_rea
     packet_t* packet = malloc(sizeof(packet_t));
     uint32_t packet_length_read = 0;
     int16_t packet_length = read_varint(buffer, buffer_size, &packet_length_read);
-    packet->size = packet_length;
-    packet->packet_id = read_varint(buffer + packet_length_read, buffer_size - packet_length_read, &packet_length_read);
+    if (packet_length == 0) {
+        packet->size = 0;
+        packet->data = NULL;
+        packet->packet_id = 0x0;
+        *bytes_read += 1;
+        return packet;
+    }
+    uint32_t packet_id_len = 0;
+    packet->packet_id = read_varint(buffer + packet_length_read, buffer_size - packet_length_read, &packet_id_len);
+    packet_length_read += packet_id_len;
+    packet->size = packet_length - packet_id_len;
     packet->data = malloc(packet_length);
     memcpy(packet->data, buffer + packet_length_read, packet_length);
-    *bytes_read = packet_length_read + packet_length;
+    *bytes_read += packet_length_read + packet_length;
     return packet;
 }
 
-packet_list_t* read_packets(uint8_t* buffer, uint32_t buffer_size) {
+void read_packets(packet_list_t* packets, uint8_t* buffer, uint32_t buffer_size) {
+    printf("Made it to read packets function!\n");
+    fflush(stdout);
     uint32_t bytes_read = 0;
     uint32_t packets_read = 0;
-    packet_list_t* packets = malloc(sizeof(packet_list_t));
-    packets->packets = malloc(sizeof(packet_t*) * MAX_PACKETS_READ);
     packets->size = 0;
     while (bytes_read < buffer_size && packets_read < MAX_PACKETS_READ) {
+        printf("Made it to the loop!\n");
+        fflush(stdout);
         packet_t* packet = read_packet(buffer + bytes_read, buffer_size - bytes_read, &bytes_read);
+        printf("Read a packet!\n");
+        print_packet(packet);
         packets->packets[packets_read] = packet;
         packets->size++;
         packets_read++;
     }
-    return packets;
+    printf("Exiting Read Packets Function!\n");
+    fflush(stdout);
 }
 
 void print_packet(packet_t* packet) {
@@ -59,6 +71,7 @@ void print_packet(packet_t* packet) {
 void print_packets(packet_list_t* packets) {
     printf("Printing %d packets:\n", packets->size);
     for (uint32_t i = 0; i < packets->size; i++) {
+        printf("Packet %d:\n", i);
         print_packet(packets->packets[i]);
     }
 }
@@ -68,10 +81,14 @@ void free_packet(packet_t* packet) {
     free(packet);
 }
 
-void free_packet_list(packet_list_t* packets) {
+void free_stack_packet_list(packet_list_t* packets) {
     for (uint32_t i = 0; i < packets->size; i++) {
-        free(packets->packets[i]);
+        free_packet(packets->packets[i]);
     }
     free(packets->packets);
+}
+
+void free_packet_list(packet_list_t* packets) {
+    free_stack_packet_list(packets);
     free(packets);
 }
