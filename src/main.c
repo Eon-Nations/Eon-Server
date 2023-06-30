@@ -5,9 +5,11 @@
 #include <netdb.h>
 #include <unistd.h>
 #include "networking/networking.h"
+#include "packets/status/handshake.h"
 
 #define SERVER_PORT 25565
 #define LISTEN_BACKLOG 50
+#define PACKET_BUFFER_SIZE 20
 #define INFINITE_LOOP 1
 #define BUFFER_SIZE 2048
 
@@ -69,14 +71,7 @@ void listen_for_death() {
 
 
 
-int main(int argc, char** argv) {
-    printf("Starting...\n");
-    if (argc > 0) {
-        printf("Arguments:\n");
-        for (int i = 0; i < argc; i++) {
-            printf("\t%s\n", argv[i]);
-        }
-    }
+int main(__attribute__((unused)) int argc, __attribute__((unused)) char** argv) {
     listen_for_death();
     kill_dead_processes();
     struct addrinfo* server_info = get_addr_info();
@@ -119,33 +114,32 @@ int main(int argc, char** argv) {
         }
         int pid = fork();
         if (pid == 0) {
-            printf("Accepted connection\n");
-            uint8_t buffer[BUFFER_SIZE] = {0};
-            int bytes_sent = recv(client_fd, buffer, BUFFER_SIZE, 0);
-            if (bytes_sent < 0) {
-                printf("Error: Could not receive data\n");
-                return 1;
+            printf("\n\n|--------------------| ACCEPTED CONNECTION |--------------------|\n");
+            for (;;) {
+                // Receive data
+                uint8_t buffer[BUFFER_SIZE] = {0};
+                int bytes_sent = recv(client_fd, buffer, BUFFER_SIZE, 0);
+                if (bytes_sent < 0) {
+                    printf("Error: Could not receive data\n");
+                    return 1;
+                }
+                if (bytes_sent == 0) {
+                    printf("Client disconnected\n");
+                    return 0;
+                }
+                printf("Received %d bytes\n", bytes_sent);
+                printf("Raw Data: ");
+                for (int i = 0; i < bytes_sent; i++) {
+                    printf(" 0x%x", buffer[i]);
+                }
+                printf("\n");
+                packet_list_t packets;
+                packets.packets = malloc(sizeof(packet_t) * PACKET_BUFFER_SIZE);
+                packets.size = 0;
+                read_packets(&packets, buffer, bytes_sent);
+                print_packets(&packets);
+                free_stack_packet_list(&packets);
             }
-            printf("Received %d bytes\n", bytes_sent);
-            printf("Raw Data: ");
-            for (int i = 0; i < bytes_sent; i++) {
-                printf(" %x", buffer[i]);
-            }
-            printf("\n");
-
-            uint32_t packet_bytes_read = 0;
-            packet_t* packet = read_packet(buffer, bytes_sent, &packet_bytes_read);
-            print_packet(packet);
-            free_packet(packet);
-            printf("Rest of Raw Data: ");
-            packet_bytes_read -= 1;
-            for (int i = packet_bytes_read; i < bytes_sent; i++) {
-                printf(" 0x%x", buffer[i]);
-            }
-            printf("\n");
-            packet = read_packet(buffer + packet_bytes_read, bytes_sent - packet_bytes_read, &packet_bytes_read);
-            print_packet(packet);
-            free_packet(packet);
             return 0; // STATUS RETURNED TO PARENT PROCESS
         } else {
             printf("Forked process %d\n", pid);

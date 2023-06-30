@@ -19,9 +19,14 @@ typedef struct {
 
 int32_t read_varint(uint8_t *data, uint32_t size, uint32_t *bytes_read);
 
+uint16_t read_ushort(uint8_t *data, uint32_t *bytes_read);
+
 packet_t* read_packet(uint8_t* buffer, uint32_t buffer_size, uint32_t* bytes_read);
 
 void read_packets(packet_list_t* packets, uint8_t* buffer, uint32_t buffer_size);
+
+uint8_t* write_varint(uint8_t* buffer, uint32_t value);
+
 
 void print_packet(packet_t* packet);
 void print_packets(packet_list_t* packets);
