@@ -17,6 +17,20 @@ int32_t read_varint(uint8_t *data, uint32_t data_size, uint32_t *bytes_read) {
     return value;
 }
 
+void write_varint(uint8_t* buffer, int32_t value, uint32_t *bytes_written) {
+    uint32_t position = 0;
+    do {
+        uint8_t current_byte = value & SEGMENT_BITS;
+        value >>= 7;
+        if (value != 0) {
+            current_byte |= SEGMENT_CONTINUATION;
+        }
+        buffer[position] = current_byte;
+        position++;
+    } while (value != 0);
+    *bytes_written += position;
+}
+
 uint16_t read_ushort(uint8_t *data, uint32_t *bytes_read) {
     uint16_t value = 0;
     value |= data[0] << 8;
@@ -44,6 +58,20 @@ packet_t* read_packet(uint8_t* buffer, uint32_t buffer_size, uint32_t* bytes_rea
     memcpy(packet->data, buffer + packet_length_read, packet_length);
     *bytes_read += packet_length_read + packet_length;
     return packet;
+}
+
+void write_packet(packet_t* packet, uint8_t* buffer, uint32_t* bytes_written) {
+    uint32_t packet_length = 0;
+    uint32_t packet_id_length = 0;
+    uint8_t* packet_id_buffer = malloc(5);
+    write_varint(packet_id_buffer, packet->packet_id, &packet_id_length);
+    packet_length += packet_id_length;
+    packet_length += packet->size;
+    write_varint(buffer, packet_length, bytes_written);
+    write_varint(buffer, packet->packet_id, &packet_id_length);
+    memcpy(buffer + *bytes_written + packet_id_length, packet->data, packet->size);
+    *bytes_written = packet_length;
+    free(packet_id_buffer);
 }
 
 void read_packets(packet_list_t* packets, uint8_t* buffer, uint32_t buffer_size) {

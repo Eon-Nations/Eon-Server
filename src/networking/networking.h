@@ -18,14 +18,13 @@ typedef struct {
 } packet_list_t;
 
 int32_t read_varint(uint8_t *data, uint32_t size, uint32_t *bytes_read);
+void write_varint(uint8_t* buffer, int32_t value, uint32_t *bytes_written);
 
 uint16_t read_ushort(uint8_t *data, uint32_t *bytes_read);
 
 packet_t* read_packet(uint8_t* buffer, uint32_t buffer_size, uint32_t* bytes_read);
-
+void write_packet(packet_t* packet, uint8_t* buffer, uint32_t* bytes_written);
 void read_packets(packet_list_t* packets, uint8_t* buffer, uint32_t buffer_size);
-
-uint8_t* write_varint(uint8_t* buffer, uint32_t value);
 
 
 void print_packet(packet_t* packet);

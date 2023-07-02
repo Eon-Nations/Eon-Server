@@ -4,11 +4,9 @@
 #include <sys/wait.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 #include "networking/networking.h"
-#include "packets/status/handshake.h"
 
-#define SERVER_PORT 25565
-#define LISTEN_BACKLOG 50
 #define PACKET_BUFFER_SIZE 20
 #define INFINITE_LOOP 1
 #define BUFFER_SIZE 2048
@@ -16,27 +14,12 @@
 // Global variable to keep track of whether the server has been stopped by Ctrl+C
 uint8_t server_stopped = 0;
 
-
-struct addrinfo* get_addr_info() {
-    const char* port = "25565";
-    struct addrinfo connection_vars = {
-        .ai_family = AF_UNSPEC,
-        .ai_socktype = SOCK_STREAM,
-        .ai_flags = AI_PASSIVE,
-        .ai_protocol = 0,
-        .ai_addrlen = 0,
-        .ai_canonname = NULL,
-        .ai_addr = NULL,
-        .ai_next = NULL
-    };
-    struct addrinfo* server_info;
-
-    int status = getaddrinfo(NULL, port, &connection_vars, &server_info);
-    if (status < 0) {
-        printf("Error: %s\n", gai_strerror(status));
-        return NULL;
+void *get_in_addr(struct sockaddr *sa)
+{
+    if (sa->sa_family == AF_INET) {
+        return &(((struct sockaddr_in*)sa)->sin_addr);
     }
-    return server_info;
+    return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
 void sigchld_handler(__attribute__((unused)) int s) {
@@ -69,35 +52,9 @@ void listen_for_death() {
     }
 }
 
-
-
 int main(__attribute__((unused)) int argc, __attribute__((unused)) char** argv) {
     listen_for_death();
     kill_dead_processes();
-    struct addrinfo* server_info = get_addr_info();
-    if (server_info == NULL) {
-        return 1;
-    }
-
-    int socket_fd = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
-    if (socket_fd < 0) {
-        perror("Error: Could not create socket\n");
-        return 1;
-    }
-
-    int bind_status = bind(socket_fd, server_info->ai_addr, server_info->ai_addrlen);
-    if (bind_status < 0) {
-        perror("Error: Could not bind socket\n");
-        return 1;
-    }
-
-    int listen_status = listen(socket_fd, LISTEN_BACKLOG);
-    if (listen_status < 0) {
-        perror("Error: Could not listen on socket\n");
-        return 1;
-    }
-
-    printf("Listening on port %d\n", SERVER_PORT);
 
     while (INFINITE_LOOP) {
         struct sockaddr_storage client_addr;
@@ -114,7 +71,10 @@ int main(__attribute__((unused)) int argc, __attribute__((unused)) char** argv) 
         }
         int pid = fork();
         if (pid == 0) {
-            printf("\n\n|--------------------| ACCEPTED CONNECTION |--------------------|\n");
+            char* ip_str = malloc(INET6_ADDRSTRLEN);
+            inet_ntop(client_addr.ss_family, get_in_addr((struct sockaddr*)&client_addr), ip_str, INET6_ADDRSTRLEN);
+            struct sockaddr_in* s = (struct sockaddr_in*)&client_addr;
+            printf("\n\n|--------------------| ACCEPTED CONNECTION from %s:%d |--------------------|\n", ip_str, ntohs(s->sin_port));
             for (;;) {
                 // Receive data
                 uint8_t buffer[BUFFER_SIZE] = {0};
@@ -125,7 +85,7 @@ int main(__attribute__((unused)) int argc, __attribute__((unused)) char** argv) 
                 }
                 if (bytes_sent == 0) {
                     printf("Client disconnected\n");
-                    return 0;
+                    break;
                 }
                 printf("Received %d bytes\n", bytes_sent);
                 printf("Raw Data: ");
@@ -138,15 +98,20 @@ int main(__attribute__((unused)) int argc, __attribute__((unused)) char** argv) 
                 packets.size = 0;
                 read_packets(&packets, buffer, bytes_sent);
                 print_packets(&packets);
+
+                // Server processes packets and creates any packets to send back
+                
+                // Packets are sent back to the client at once
                 free_stack_packet_list(&packets);
             }
+            close(client_fd);
             return 0; // STATUS RETURNED TO PARENT PROCESS
         } else {
+            close(client_fd); // Parent process isn't listening for connections
             printf("Forked process %d\n", pid);
             int status = waitid(P_ALL, 0, NULL, WEXITED);
             printf("Process %d exited with status %d\n", pid, status);
         }
-        close(client_fd); // Added to fix implicit declaration of function 'close'
     }
     close(socket_fd);
     freeaddrinfo(server_info);

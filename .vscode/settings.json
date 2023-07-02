@@ -1,7 +1,9 @@
 {
     "files.associations": {
         "packet.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "stdint.h": "c",
+        "handshake.h": "c"
     },
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }

@@ -1,1 +1,2 @@
-add_subdirectory(handshake)
+add_subdirectory(serverbound)
+add_subdirectory(clientbound)

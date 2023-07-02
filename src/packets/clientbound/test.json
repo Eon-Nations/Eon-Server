@@ -1,0 +1,16 @@
+{
+    "version": {
+        "name": "1.19.4",
+        "protocol": 762
+    },
+    "players": {
+        "max": 100,
+        "online": 0,
+        "sample": []
+    },
+    "description": {
+        "text": "A Minecraft Server"
+    },
+    "enforcesSecureChat": true,
+    "previewsChat": true
+}

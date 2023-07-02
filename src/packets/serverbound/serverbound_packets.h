@@ -1,7 +1,9 @@
-#ifndef HANDSHAKE_PACKET_H
-#define HANDSHAKE_PACKET_H
+#ifndef SERVERBOUND_PACKETS_H
+#define SERVERBOUND_PACKETS_H
 
 #include <stdint.h>
+#include <string.h>
+#include <stdio.h>
 #include "../../networking/networking.h"
 
 typedef struct {
@@ -12,9 +14,7 @@ typedef struct {
 } handshake_packet_t;
 
 handshake_packet_t* parse_packet(packet_t* packet);
-
 void print_handshake_packet(handshake_packet_t* packet);
-
 void free_handshake_packet(handshake_packet_t* packet);
 
 #endif
