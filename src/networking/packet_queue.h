@@ -2,6 +2,7 @@
 #define PACKET_QUEUE_H
 
 #include "networking.h"
+#include <stdbool.h>
 
 #define MAX_PACKET_CAPACITY 1096
 #define PACKET_QUEUE_FULL 0x1
@@ -15,8 +16,8 @@ typedef struct {
 } packet_queue_t;
 
 packet_queue_t* create_packet_queue();
-packet_queue_t* is_packet_queue_empty(packet_queue_t* queue);
-packet_queue_t* is_packet_queue_full(packet_queue_t* queue);
+bool is_packet_queue_empty(packet_queue_t* queue);
+bool is_packet_queue_full(packet_queue_t* queue);
 uint8_t queue_packet(packet_queue_t* queue, packet_t* packet);
 packet_t* dequeue_packet(packet_queue_t* queue);
 packet_t* peek_packet(packet_queue_t* queue);

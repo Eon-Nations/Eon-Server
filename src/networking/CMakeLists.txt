@@ -1,1 +1,1 @@
-add_library(networking networking.c packet_queue.c)
+add_library(networking networking.c packet_queue.c network_server.c)
