@@ -1,4 +1,5 @@
 #include "networking.h"
+#include <stdio.h>
 
 #define SEGMENT_BITS 0x7F
 #define SEGMENT_CONTINUATION 0x80
@@ -94,6 +95,7 @@ void print_packet(packet_t* packet) {
         printf("%02x ", packet->data[i]);
     }
     printf("\n");
+    fflush(stdout);
 }
 
 void print_packets(packet_list_t* packets) {

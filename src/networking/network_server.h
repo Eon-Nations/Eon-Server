@@ -30,9 +30,9 @@ network_server_t* create_mc_server();
 
 void close_mc_server(network_server_t* server);
 
-client_connection_t* accept_mc_connection(network_server_t* server);
+void accept_mc_connection(client_connection_t* client_conn, network_server_t* server);
 
-uint16_t read_all_incoming_packets(client_connection_t* client_connection);
+packet_list_t* read_all_incoming_packets(client_connection_t* client_connection);
 
 void close_client_connection(client_connection_t* client_connection);
 

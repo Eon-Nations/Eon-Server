@@ -1,4 +1,7 @@
 #include "network_server.h"
+#include "networking.h"
+#include "packet_queue.h"
+#include <stdio.h>
 
 void *get_in_addr(struct sockaddr *sa)
 {
@@ -55,8 +58,8 @@ network_server_t* create_mc_server() {
         perror("Error: Could not listen on socket\n");
         return NULL;
     }
-
-    printf("Listening on port %d\n", SERVER_PORT);
+    char* format_str = "Listening on port %d\n";
+    printf(format_str, SERVER_PORT);
 
     network_server_t* server = malloc(sizeof(network_server_t));
     memset(server, 0, sizeof(network_server_t));
@@ -66,32 +69,25 @@ network_server_t* create_mc_server() {
 }
 
 
-client_connection_t* accept_mc_connection(network_server_t* server) {
+void accept_mc_connection(client_connection_t* client_conn, network_server_t* server) {
     struct sockaddr_storage* client_addr = malloc(sizeof(struct sockaddr_storage));
-    socklen_t client_addr_size = sizeof(client_addr);
-    client_connection_t* client_connection = malloc(sizeof(client_connection_t));
-    memset(client_connection, 0, sizeof(client_connection_t));
+    socklen_t client_addr_size = sizeof(struct sockaddr_storage);
     int client_fd = accept(server->server_fd, (struct sockaddr*)&client_addr, &client_addr_size);
-    char* ip_str = malloc(INET6_ADDRSTRLEN);
-    inet_ntop(client_addr->ss_family, get_in_addr((struct sockaddr*)client_addr), ip_str, INET6_ADDRSTRLEN);
-    struct sockaddr_in* s = (struct sockaddr_in*)&client_addr;
-    printf("\n\n|--------------------| ACCEPTED CONNECTION from %s:%d |--------------------|\n", ip_str, ntohs(s->sin_port));
-    free(ip_str);
-    client_connection->client_addr = client_addr;
+    client_conn->client_addr = client_addr;
     if (client_fd < 0) {
         perror("Error: Could not accept connection\n");
-        return NULL;
+        return;
     }
-    client_connection->client_fd = client_fd;
-    client_connection->incoming_packets = create_packet_queue();
-    client_connection->outgoing_packets = create_packet_queue();
-    return client_connection;
+    char* accept_str = "\n\n|--------------------| ACCEPTED CONNECTION |--------------------|\n";
+    puts(accept_str);
+    client_conn->client_fd = client_fd;
+    client_conn->incoming_packets = create_packet_queue();
+    client_conn->outgoing_packets = create_packet_queue();
 }
 
-uint16_t read_all_incoming_packets(client_connection_t* client_connection) {
-    packet_queue_t* incoming_packets = client_connection->incoming_packets;
-    uint8_t* buffer = malloc(BUFFER_SIZE);
-    int bytes_received = recv(client_connection->client_fd, buffer, BUFFER_SIZE, 0);
+packet_list_t* read_all_incoming_packets(client_connection_t* client_connection) {
+    uint8_t buffer[BUFFER_SIZE];
+    int bytes_received = recv(client_connection->client_fd, &buffer, BUFFER_SIZE, 0);
     if (bytes_received < 0) {
         perror("Error: Could not receive data\n");
         return 0;
@@ -99,21 +95,14 @@ uint16_t read_all_incoming_packets(client_connection_t* client_connection) {
     if (bytes_received == 0) {
         return 0;
     }
-    packet_list_t packets;
-    read_packets(&packets, buffer, bytes_received);
-    for (uint32_t i = 0; i < packets.size; i++) {
-        packet_t* packet = packets.packets[i];
-        uint8_t status = queue_packet(incoming_packets, packet);
-        if (status == PACKET_QUEUE_FULL) {
-            printf("Error: Packet queue is full\n");
-            free_stack_packet_list(&packets);
-            free(buffer);
-            return i + 1;
-        }
+    packet_list_t* packets = malloc(sizeof(packet_list_t));
+    packets->packets = malloc(sizeof(packet_t*) * 50);
+    read_packets(packets, buffer, bytes_received);
+    for (uint32_t i = 0; i < packets->size; i++) {
+        packet_t* packet = packets->packets[i];
+        print_packet(packet);
     }
-    free_stack_packet_list(&packets);
-    free(buffer);
-    return packets.size;
+    return packets;
 }
 
 void close_mc_server(network_server_t* server) {
@@ -126,5 +115,4 @@ void close_client_connection(client_connection_t* client_connection) {
     close(client_connection->client_fd);
     free_packet_queue(client_connection->incoming_packets);
     free_packet_queue(client_connection->outgoing_packets);
-    free(client_connection);
 }

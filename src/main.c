@@ -52,25 +52,18 @@ int main(__attribute__((unused)) int argc, __attribute__((unused)) char** argv) 
     if (server == NULL) {
         return 1;
     }
-
     while (!server_stopped) {
-        client_connection_t* client = accept_mc_connection(server);
-        if (client != NULL && fork() == 0) {
-            uint16_t num_packets = read_all_incoming_packets(client);
-            printf("Read %d packets\n", num_packets);
-            packet_queue_t* incoming_packets = client->incoming_packets;
-            for (packet_t* packet = dequeue_packet(incoming_packets); packet != NULL; packet = dequeue_packet(incoming_packets)) {
+        client_connection_t* client = malloc(sizeof(client_connection_t));
+        accept_mc_connection(client, server);
+        if (client->client_fd != -1) {
+            packet_list_t* packets = read_all_incoming_packets(client);
+            for (uint32_t i = 0; i < packets->size; i++) {
+                packet_t* packet = packets->packets[i];
                 print_packet(packet);
-                free_packet(packet);
             }
-            close_client_connection(client);
-            return 0; // STATUS RETURNED TO PARENT PROCESS
-        } else if (client != NULL) {
-            close_client_connection(client); // Parent process isn't listening for connections
-            printf("Forked process %d\n", getpid());
-            int status = waitid(P_ALL, 0, NULL, WEXITED);
-            printf("Process %d exited with status %d\n", getpid(), status);
+            free_packet_list(packets);
         }
+        close_client_connection(client);
     }
     close_mc_server(server);
     printf("Server Closed Succesfully!\n");
