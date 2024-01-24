@@ -15,4 +15,10 @@ void write_status_response(status_response_t* packet, uint8_t* buffer, uint32_t*
 void print_status_response(status_response_t* packet);
 void free_status_response(status_response_t* packet);
 
+typedef struct {
+    int64_t timestamp;
+} ping_response_t;
+
+ping_response_t create_ping_response();
+
 #endif

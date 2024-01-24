@@ -5,7 +5,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include "networking/networking.h"
+#include <pthread.h>
 #include "networking/network_server.h"
 
 #define PACKET_BUFFER_SIZE 20
@@ -47,25 +47,12 @@ void listen_for_death() {
 int main(__attribute__((unused)) int argc, __attribute__((unused)) char** argv) {
     listen_for_death();
     kill_dead_processes();
-
-    network_server_t* server = create_mc_server();
-    if (server == NULL) {
-        return 1;
-    }
-    while (!server_stopped) {
-        client_connection_t* client = malloc(sizeof(client_connection_t));
-        accept_mc_connection(client, server);
-        if (client->client_fd != -1) {
-            packet_list_t* packets = read_all_incoming_packets(client);
-            for (uint32_t i = 0; i < packets->size; i++) {
-                packet_t* packet = packets->packets[i];
-                print_packet(packet);
-            }
-            free_packet_list(packets);
-        }
-        close_client_connection(client);
-    }
-    close_mc_server(server);
+    
+    // Start Listening Thread
+    pthread_t listen_thread;
+    pthread_create(&listen_thread, NULL, mc_server_thread, NULL);
+    // Start Scheduler and Async Tasks
+    pthread_join(listen_thread, NULL);
     printf("Server Closed Succesfully!\n");
     return 0;
 }

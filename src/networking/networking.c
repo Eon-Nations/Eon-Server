@@ -40,6 +40,25 @@ uint16_t read_ushort(uint8_t *data, uint32_t *bytes_read) {
     return value;
 }
 
+int64_t read_long(uint8_t* data, uint32_t* bytes_read) {
+    const int LONG_BYTES = 8;
+    int64_t value = 0;
+    for (int i = 0; i < LONG_BYTES; i++) {
+        value = value << 8 | data[*bytes_read + i];
+    }
+    *bytes_read += LONG_BYTES;
+    return value;
+}
+
+void write_long(int64_t num, uint8_t* data, uint32_t* bytes_written) {
+    const int LONG_BYTES = 8;
+    int count = 0;
+    for (int i = LONG_BYTES * 7; i >= 0; i -= 8) {
+        num = num >> i | data[*bytes_written + count];
+        count++;
+    }
+}
+
 packet_t* read_packet(uint8_t* buffer, uint32_t buffer_size, uint32_t* bytes_read) {
     packet_t* packet = malloc(sizeof(packet_t));
     uint32_t packet_length_read = 0;
@@ -88,7 +107,7 @@ void read_packets(packet_list_t* packets, uint8_t* buffer, uint32_t buffer_size)
 }
 
 void print_packet(packet_t* packet) {
-    printf("Packet ID: %d\n", packet->packet_id);
+    printf("Packet ID: %2x\n", packet->packet_id);
     printf("Packet Size: %d\n", packet->size);
     printf("Packet Data: ");
     for (uint32_t i = 0; i < packet->size; i++) {

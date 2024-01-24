@@ -1,6 +1,6 @@
 #include "serverbound_packets.h"
 
-handshake_packet_t* parse_packet(packet_t* packet) {
+handshake_packet_t* parse_handshake_packet(packet_t* packet) {
     handshake_packet_t* hp = malloc(sizeof(handshake_packet_t));
     uint32_t bytes_read = 0, server_length = 0;
     hp->protocol_version = read_varint(packet->data, packet->size, &bytes_read);
@@ -27,3 +27,5 @@ void free_handshake_packet(handshake_packet_t* hp) {
     free(hp->server_address);
     free(hp);
 }
+
+

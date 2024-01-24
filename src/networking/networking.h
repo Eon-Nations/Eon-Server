@@ -21,6 +21,8 @@ int32_t read_varint(uint8_t *data, uint32_t size, uint32_t *bytes_read);
 void write_varint(uint8_t* buffer, int32_t value, uint32_t *bytes_written);
 
 uint16_t read_ushort(uint8_t *data, uint32_t *bytes_read);
+int64_t read_long(uint8_t* data, uint32_t* bytes_read);
+void write_long(int64_t num, uint8_t* data, uint32_t* bytes_written);
 
 packet_t* read_packet(uint8_t* buffer, uint32_t buffer_size, uint32_t* bytes_read);
 void write_packet(packet_t* packet, uint8_t* buffer, uint32_t* bytes_written);

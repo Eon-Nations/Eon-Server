@@ -1,8 +1,21 @@
 #include "clientbound_packets.h"
+#include <errno.h>
+#include <linux/limits.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
 status_response_t* create_status_response() {
     status_response_t* status_response = malloc(sizeof(status_response_t));
-    FILE* file = fopen("test.json", "r");
+    FILE* file = fopen("src/test.json", "r");
+    if (file == NULL) {
+        char cwd[PATH_MAX];
+        getcwd(cwd, sizeof(cwd));
+        printf("Opening the file has gone wrong. Here's why: %s\n", strerror(errno));
+        printf("Current working dir: %s\n", cwd);
+        fflush(stdout);
+        return NULL;
+    }
     fseek(file, 0, SEEK_END);
     long file_size = ftell(file);
     status_response->json_response_length = file_size;
@@ -13,7 +26,6 @@ status_response_t* create_status_response() {
     fclose(file);
 
     status_response->json_response[file_size] = '\0';
-    printf("File contents: %s\n", status_response->json_response);
     return status_response;
 }
 
