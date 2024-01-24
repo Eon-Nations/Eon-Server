@@ -8,12 +8,12 @@ packet_queue_t* create_packet_queue() {
     return queue;
 }
 
-packet_queue_t* is_packet_queue_empty(packet_queue_t* queue) {
-    return head == -1 && tail == -1;
+bool is_packet_queue_empty(packet_queue_t* queue) {
+    return queue->head == -1 && queue->tail == -1;
 }
 
-packet_queue_t* is_packet_queue_full(packet_queue_t* queue) {
-    return (queue->rear + 1) % MAX_PACKET_CAPACITY == queue->front;
+bool is_packet_queue_full(packet_queue_t* queue) {
+    return (queue->tail + 1) % MAX_PACKET_CAPACITY == queue->head;
 }
 
 uint8_t queue_packet(packet_queue_t* queue, packet_t* packet) {
